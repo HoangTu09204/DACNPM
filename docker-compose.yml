@@ -13,7 +13,7 @@ services:
       - mongo
 
   frontend:
-    build: ./frontend/shop-pc-api
+    build: ./frontend/pc-shop
     container_name: pcshop-frontend
     restart: always
     ports:
