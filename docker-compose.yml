@@ -2,31 +2,33 @@ version: "3.8"
 
 services:
   backend:
-    build: ./backend
-    container_name: backend
+    build: ./backend/shop-pc-api
+    container_name: pcshop-backend
+    restart: always
     ports:
       - "5000:5000"
-    environment:
-      - MONGO_URI=mongodb://mongo:27017/weblinhkien
+    env_file:
+      - ./backend/shop-pc-api/.env
     depends_on:
       - mongo
-    restart: always
 
   frontend:
-    build: ./frontend
-    container_name: frontend
+    build: ./frontend/shop-pc-api
+    container_name: pcshop-frontend
+    restart: always
     ports:
       - "3000:80"
-    restart: always
+    depends_on:
+      - backend
 
   mongo:
     image: mongo:6
-    container_name: mongo
+    container_name: pcshop-mongo
+    restart: always
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-    restart: always
+      - mongo-data:/data/db
 
 volumes:
-  mongo_data:
+  mongo-data:
