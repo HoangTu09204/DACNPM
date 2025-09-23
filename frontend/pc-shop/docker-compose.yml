@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  backend:
+    build: ./backend
+    container_name: pcshop-backend
+    ports:
+      - "5000:5000"
+    restart: always
+    environment:
+      - NODE_ENV=production
+
+  frontend:
+    build: ./frontend
+    container_name: pcshop-frontend
+    ports:
+      - "3000:80"   # Nginx chạy trên 80, map ra ngoài 3000
+    restart: always
+    depends_on:
+      - backend
