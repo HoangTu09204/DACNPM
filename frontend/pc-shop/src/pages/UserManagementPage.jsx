@@ -4,42 +4,55 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import '../css/AdminPage.css';
 import { toast, ToastContainer } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
+  const navigate = useNavigate();
 
+  // ✅ Kiểm tra quyền admin
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    if (!userInfo || userInfo.role !== 'admin') {
+      toast.error('❌ Bạn không có quyền truy cập trang này!');
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // ✅ Lấy danh sách người dùng
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = () => {
     axios
-      .get(`${process.env.REACT_APP_API_URL}/auth/users`)
+      .get(`${process.env.REACT_APP_API_URL}/auth`)
       .then((res) => setUsers(res.data))
       .catch(() => toast.error('Lỗi khi tải danh sách người dùng'));
   };
 
+  // ✅ Xử lý khi chỉnh sửa thông tin user
   const handleChange = (id, field, value) => {
     setUsers((prevUsers) =>
       prevUsers.map((u) => (u._id === id ? { ...u, [field]: value } : u))
     );
   };
 
+  // ✅ Cập nhật user
   const handleUpdate = (user) => {
     const updatedUser = {
       name: user.name,
       email: user.email,
     };
 
-    // Chỉ gửi password nếu người dùng nhập
     if (user.password && user.password.trim() !== '') {
       updatedUser.password = user.password;
     }
 
     axios
-      .put(`${process.env.REACT_APP_API_URL}/auth/users/${user._id}`, updatedUser)
+      .put(`${process.env.REACT_APP_API_URL}/auth/${user._id}`, updatedUser)
       .then(() => {
         toast.success('✅ Cập nhật người dùng thành công');
         fetchUsers();
@@ -47,9 +60,10 @@ function UserManagementPage() {
       .catch(() => toast.error('❌ Cập nhật thất bại'));
   };
 
+  // ✅ Xóa user
   const handleDelete = (id) => {
     axios
-      .delete(`${process.env.REACT_APP_API_URL}/auth/users/${id}`)
+      .delete(`${process.env.REACT_APP_API_URL}/auth/${id}`)
       .then(() => {
         toast.success('🗑️ Xóa người dùng thành công');
         fetchUsers();
@@ -57,6 +71,7 @@ function UserManagementPage() {
       .catch(() => toast.error('❌ Xóa thất bại'));
   };
 
+  // ✅ Thêm user mới
   const handleAdd = () => {
     const { name, email, password } = newUser;
     if (!name || !email || !password) {

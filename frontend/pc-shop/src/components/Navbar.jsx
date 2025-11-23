@@ -16,19 +16,28 @@ function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  // Cập nhật cartCount mỗi khi localStorage thay đổi
+  const updateCartCount = () => {
+    const cartKey = user ? `cart_${user.id}` : 'cart_guest';
+    const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
     const total = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
     setCartCount(total);
-  }, []);
+  };
 
   useEffect(() => {
+    updateCartCount(); // Cập nhật ngay khi mount
+
+    // Lắng nghe event storage
+    const handleStorage = () => updateCartCount();
+    window.addEventListener('storage', handleStorage);
+
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [user]);
+
+  // Dropdown Danh Mục
+  useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target) &&
-        !buttonRef.current.contains(event.target)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target) && !buttonRef.current.contains(event.target)) {
         setShowCategory(false);
       }
     };
@@ -36,12 +45,10 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Dropdown User
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        userDropdownRef.current &&
-        !userDropdownRef.current.contains(event.target)
-      ) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
         setShowUserDropdown(false);
       }
     };
@@ -91,9 +98,7 @@ function Navbar() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch();
-              }
+              if (e.key === 'Enter') handleSearch();
             }}
           />
         </div>
@@ -111,20 +116,26 @@ function Navbar() {
           <FaUserCircle />
           {user ? (
             <>
-              <span>Xin chào, {user.name}</span>
+              <span
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  navigate('/user');
+                }}
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Xin chào, {user.name}
+              </span>
+
               {showUserDropdown && (
                 <div className="user-dropdown">
                   <div className="user-name">{user.name}</div>
                   <div className="user-email">{user.email}</div>
                   {user.role === 'admin' && (
-                    <div className="admin-link" onClick={() => {
-                      setShowUserDropdown(false);
-                      navigate('/admin');
-                    }}>
+                    <div className="admin-link" onClick={() => { setShowUserDropdown(false); navigate('/admin/dashboard'); }}>
                       Admin
                     </div>
                   )}
-                  <button onClick={logout}>Đăng xuất</button>
+                  <button onClick={() => { logout(); navigate('/'); }}>Đăng xuất</button>
                 </div>
               )}
             </>

@@ -23,14 +23,23 @@ function AdminPage() {
 
   const navigate = useNavigate();
 
-  // Fetch all products on component mount
+  // ✅ Kiểm tra role người dùng
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    if (!userInfo || userInfo.role !== 'admin') {
+      toast.error('❌ Bạn không có quyền truy cập trang này!');
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // ✅ Lấy danh sách sản phẩm
   useEffect(() => {
     axios.get(`${process.env.REACT_APP_API_URL}/products`)
       .then(res => setProducts(res.data))
       .catch(err => console.error('Lỗi khi tải sản phẩm:', err));
   }, []);
 
-  // Socket.io – listen to real-time new order events
+  // ✅ Lắng nghe socket.io cho đơn hàng mới
   useEffect(() => {
     const socket = io(`${process.env.REACT_APP_API_URL}`);
 
@@ -68,6 +77,7 @@ function AdminPage() {
     return () => socket.disconnect();
   }, [navigate]);
 
+  // ✅ Các hàm xử lý CRUD sản phẩm
   const handleInputChange = (id, field, value) => {
     setProducts(products =>
       products.map(p => (p._id === id ? { ...p, [field]: value } : p))
@@ -131,14 +141,14 @@ function AdminPage() {
     <>
       <Navbar />
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
-  <button
-    className="admin-btn"
-    onClick={() => navigate('/admin/users')}
-    style={{ marginBottom: '20px', backgroundColor: '#28a745', color: 'white' }}
-  >
-    Quản lý người dùng
-  </button>
-</div>
+        <button
+          className="admin-btn"
+          onClick={() => navigate('/admin/users')}
+          style={{ marginBottom: '20px', backgroundColor: '#28a745', color: 'white' }}
+        >
+          Quản lý người dùng
+        </button>
+      </div>
 
       <div className="admin-container">
         <h2 className="admin-title">Quản lý sản phẩm</h2>

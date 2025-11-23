@@ -13,10 +13,70 @@ function CartPage() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
+  const getCartKey = (userId) => `cart_${userId}`;
+
+  // Load giỏ hàng khi user login, merge cart cũ hoặc cart_guest
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem('cart')) || [];
-    setCart(storedCart);
-  }, []);
+    if (!user) {
+      toast.warning('⚠️ Vui lòng đăng nhập để xem giỏ hàng!', {
+        position: 'top-center',
+        autoClose: 2000,
+      });
+      setTimeout(() => navigate('/login'), 2000);
+    } else {
+      const oldCart = JSON.parse(localStorage.getItem('cart')) || [];
+      const guestCart = JSON.parse(localStorage.getItem('cart_guest')) || [];
+      const userCart = JSON.parse(localStorage.getItem(getCartKey(user.id))) || [];
+
+      // Merge oldCart và guestCart vào userCart
+      const mergedCart = [...userCart];
+
+      [...oldCart, ...guestCart].forEach(item => {
+        const index = mergedCart.findIndex(ci => ci._id === item._id);
+        if (index > -1) {
+          mergedCart[index].quantity += item.quantity;
+        } else {
+          mergedCart.push(item);
+        }
+      });
+
+      setCart(mergedCart);
+      localStorage.setItem(getCartKey(user.id), JSON.stringify(mergedCart));
+
+      // Xóa giỏ hàng cũ
+      localStorage.removeItem('cart');
+      localStorage.removeItem('cart_guest');
+    }
+  }, [user, navigate]);
+
+  // Lưu giỏ hàng vào localStorage và state
+  const saveCart = (updatedCart) => {
+  setCart(updatedCart);
+  const cartKey = user ? getCartKey(user.id) : 'cart_guest';
+  localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+
+  // ⭐ Trigger event storage để Navbar cập nhật ngay
+  window.dispatchEvent(new Event('storage'));
+};
+
+
+  const addToCart = (product) => {
+    const cartKey = user ? getCartKey(user.id) : 'cart_guest';
+    const storedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
+
+    const existIndex = storedCart.findIndex(item => item._id === product._id);
+    if (existIndex > -1) {
+      storedCart[existIndex].quantity += 1;
+    } else {
+      storedCart.push({ ...product, quantity: 1 });
+    }
+
+    saveCart(storedCart);
+    toast.success('✅ Thêm sản phẩm vào giỏ hàng thành công', {
+      position: 'top-center',
+      autoClose: 1500,
+    });
+  };
 
   const updateQuantity = (id, amount) => {
     const updatedCart = cart.map(item => {
@@ -26,28 +86,25 @@ function CartPage() {
       }
       return item;
     });
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    saveCart(updatedCart);
   };
 
   const removeFromCart = (id) => {
     const updatedCart = cart.filter(item => item._id !== id);
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    saveCart(updatedCart);
   };
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleCheckout = () => {
     if (!user) {
-      toast.warning('⚠️ Vui lòng đăng nhập để thanh toán!', {
-        position: 'top-center',
-        autoClose: 3000,
-      });
+      toast.warning('⚠️ Vui lòng đăng nhập để thanh toán!', { position: 'top-center', autoClose: 3000 });
     } else {
       navigate('/checkout');
     }
   };
+
+  if (!user) return <ToastContainer />;
 
   return (
     <div>
@@ -65,7 +122,7 @@ function CartPage() {
                 <div className="cart-info">
                   <h3>{item.name}</h3>
                   <p>Hãng: {item.brand}</p>
-                  <p className="price">Giá: {Number(item.price).toLocaleString()} VND</p>
+                  <p className="price">{Number(item.price).toLocaleString()} VND</p>
                   <div className="cart-actions">
                     <div className="quantity-controls">
                       <button onClick={() => updateQuantity(item._id, -1)}>-</button>

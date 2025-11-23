@@ -11,7 +11,18 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server khi lấy danh sách người dùng' });
   }
 };
-
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password'); // Ẩn password
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy user:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
 // ✅ Đăng ký người dùng
 exports.register = async (req, res) => {
   try {

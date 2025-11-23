@@ -8,7 +8,7 @@ exports.createOrder = async (req, res) => {
     } = req.body;
 
     const order = new Order({
-      userId: req.user.id, // ✅ đúng
+      userId: req.user.id || req.user.userId,
       items,
       total,
       name,
@@ -22,7 +22,10 @@ exports.createOrder = async (req, res) => {
 
     await order.save();
 
-    const populatedOrder = await order.populate('items.productId').populate('userId');
+    const populatedOrder = await order.populate([
+      { path: 'items.productId' },
+      { path: 'userId' }
+    ]);
     req.app.get('io').emit('new-order', populatedOrder);
 
     res.status(201).json(order);
@@ -31,7 +34,17 @@ exports.createOrder = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
   }
 };
-
+exports.getOrdersByUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const orders = await Order.find({ userId })
+      .populate('items.productId userId');
+    res.json(orders);
+  } catch (err) {
+    console.error('Lỗi khi lấy đơn hàng theo userId:', err);
+    res.status(500).json({ message: 'Lỗi server khi lấy đơn hàng người dùng' });
+  }
+};
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id }) // ✅ sửa ở đây

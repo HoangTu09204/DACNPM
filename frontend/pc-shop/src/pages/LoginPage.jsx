@@ -17,18 +17,31 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/auth/users/login', { email, password });
+      const res = await axios.post('/auth/login', { email, password });
 
-      // ✅ Lưu user & token vào context + localStorage
-      login(res.data.user, res.data.token);
+      const { user, token } = res.data; // ✅ Backend trả về user + token
+
+      // ✅ Lưu thông tin vào localStorage để axios interceptor dùng
+      localStorage.setItem('token', token);
+      localStorage.setItem('userInfo', JSON.stringify(user));
+
+      // ✅ Cập nhật context
+      login(user, token);
 
       setSuccess(true);
+
       setTimeout(() => {
         setSuccess(false);
-        navigate('/');
+        // ✅ Nếu là admin → vào dashboard
+        if (user.role === 'admin') {
+          navigate('/');
+        } else {
+          navigate('/');
+        }
       }, 1200);
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi đăng nhập');
+      console.error('❌ Lỗi đăng nhập:', err);
+      setError(err.response?.data?.message || 'Sai email hoặc mật khẩu');
     }
   };
 
@@ -43,13 +56,13 @@ function LoginPage() {
           <input
             type="email"
             placeholder="Email"
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
           <input
             type="password"
             placeholder="Mật khẩu"
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
           <button type="submit">Đăng nhập</button>
@@ -65,7 +78,9 @@ function LoginPage() {
           <div className="dialog">
             <div className="dialog-title">Đăng nhập thất bại</div>
             <div className="dialog-message">{error}</div>
-            <button className="dialog-close" onClick={handleCloseDialog}>Đóng</button>
+            <button className="dialog-close" onClick={handleCloseDialog}>
+              Đóng
+            </button>
           </div>
         </div>
       )}
@@ -75,11 +90,22 @@ function LoginPage() {
           <div className="dialog">
             <div className="dialog-success-icon">
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="24" fill="#4caf50"/>
-                <path d="M15 25L22 32L34 18" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="24" cy="24" r="24" fill="#4caf50" />
+                <path
+                  d="M15 25L22 32L34 18"
+                  stroke="#fff"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
-            <div className="dialog-title" style={{ color: '#4caf50' }}>Đăng nhập thành công</div>
+            <div
+              className="dialog-title"
+              style={{ color: '#4caf50' }}
+            >
+              Đăng nhập thành công
+            </div>
           </div>
         </div>
       )}
